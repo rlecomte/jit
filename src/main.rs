@@ -1,9 +1,10 @@
 extern crate clap;
 
 use clap::{App, Arg, SubCommand};
-use std::fs;
-use std::fs::DirBuilder;
 use std::process::exit;
+use workspace::*;
+
+mod workspace;
 
 fn main() {
     let matches = App::new("jit")
@@ -19,23 +20,17 @@ fn main() {
                         .index(1),
                 ),
         )
+        .subcommand(SubCommand::with_name("commit").about("commit new content into the jit index."))
         .get_matches();
 
     exit(if let Some(matches) = matches.subcommand_matches("init") {
-        let path = String::from(matches.value_of("path").unwrap_or("."));
-        initialize(path)
+        let path = matches.value_of("path").unwrap_or(".");
+        let w = Workspace::new(path);
+        w.initialize().unwrap()
+    } else if let Some(_) = matches.subcommand_matches("commit") {
+        let w = Workspace::new(".");
+        w.commit().unwrap()
     } else {
         1
     });
-}
-
-fn initialize(to_path: String) -> i32 {
-    let p = fs::canonicalize(to_path).unwrap();
-    println!("Initialize empty jit repo in {}", p.display());
-
-    let mut builder = DirBuilder::new();
-    builder.recursive(true);
-    builder.create(p.join(".jit/objects")).unwrap();
-    builder.create(p.join(".jit/refs")).unwrap();
-    0
 }
