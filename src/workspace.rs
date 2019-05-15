@@ -1,14 +1,16 @@
+use crate::store::*;
 use std::fs::{self, DirBuilder, DirEntry};
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-pub(crate) struct Workspace<'a> {
-    pub path: &'a Path,
+pub(crate) struct Workspace {
+    pub path: PathBuf,
+    pub store: Store,
 }
 
-impl<'a> Workspace<'a> {
-    pub fn initialize(&'a self) -> io::Result<i32> {
-        let p = self.path.canonicalize()?;
+impl Workspace {
+    pub fn initialize(&self) -> io::Result<i32> {
+        let p = &self.path.canonicalize()?;
         println!("Initialize empty jit repo in {}", p.display());
 
         let mut builder = DirBuilder::new();
@@ -18,21 +20,26 @@ impl<'a> Workspace<'a> {
         Ok(0)
     }
 
-    pub fn commit(&'a self) -> io::Result<i32> {
-        let show_path = |f: &DirEntry| println!("{:?}", f.path());
-        visit_jit_dir(self.path, &show_path)?;
+    pub fn commit(&self) -> io::Result<i32> {
+        //TODO don't unwrap Result
+        let store_blob = |f: &DirEntry| {
+            println!("{:?}", f.path());
+            Blob::new(&f.path()).persist(&self.store).unwrap()
+        };
+        visit_jit_dir(&self.path, &store_blob)?;
         Ok(0)
     }
 
-    pub fn new(path: &'a str) -> Workspace {
+    pub fn new(path: &Path) -> Workspace {
         Workspace {
-            path: Path::new(path),
+            path: path.to_path_buf(),
+            store: Store::new(&path.join(".jit/objects")),
         }
     }
 }
 
-fn visit_jit_dir(path: &Path, cb: &Fn(&DirEntry)) -> io::Result<()> {
-    let ignore = [".", "..", ".jit"];
+fn visit_jit_dir(path: &PathBuf, cb: &Fn(&DirEntry)) -> io::Result<()> {
+    let ignore = [".", "..", ".jit", ".git", "target"];
 
     for entry in fs::read_dir(path)? {
         let entry = entry?;

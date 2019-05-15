@@ -6,3 +6,7 @@ edition = "2018"
 
 [dependencies]
 clap = "2.33.0"
+ring = "0.14.6"
+uuid = { version = "0.7", features = ["v4"] }
+deflate = "0.7.19"
+hex = "0.3.2"

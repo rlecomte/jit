@@ -1,9 +1,11 @@
 extern crate clap;
 
 use clap::{App, Arg, SubCommand};
+use std::path::Path;
 use std::process::exit;
 use workspace::*;
 
+mod store;
 mod workspace;
 
 fn main() {
@@ -25,10 +27,10 @@ fn main() {
 
     exit(if let Some(matches) = matches.subcommand_matches("init") {
         let path = matches.value_of("path").unwrap_or(".");
-        let w = Workspace::new(path);
+        let w = Workspace::new(Path::new(path));
         w.initialize().unwrap()
     } else if let Some(_) = matches.subcommand_matches("commit") {
-        let w = Workspace::new(".");
+        let w = Workspace::new(Path::new("."));
         w.commit().unwrap()
     } else {
         1
